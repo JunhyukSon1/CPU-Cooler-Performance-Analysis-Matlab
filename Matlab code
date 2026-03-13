@@ -1,0 +1,115 @@
+% Name: Junhyuk Son
+% Date: Nov.02.2025
+% Objection: 
+
+% Parameters(fixed value)
+temp = 25;              % Ambient Temperature (°C)
+C = 100;                % Termal Capacitance (J/°C)
+time_range = [0 180];   % Time Range(s)
+t0 = temp;              % Initial CPU temperature (°C)
+Rth = 0.5;              % Thermal Resistance           
+
+% Variables to compare
+Airflow_values = [0.2, 0.4, 0.6, 0.8, 1.0]        % Airflow Factor
+
+%% Effect of Airflow(Generalization)
+% Outcome: The graph shows that higher airflow factor results lower CPU 
+% temperature. This proves that Airflow helps lower cpu temperature.
+figure;
+hold on;
+for i = 1:length(Airflow_values)
+    P = 95;
+    Airflow = Airflow_values(i);
+    Reff = Rth / Airflow;
+
+    ode = @(t,T) (P - (T - temp)/Reff) / C;
+    [t,T] = ode45(ode, time_range, t0);
+
+    plot(t, T, 'LineWidth', 2, 'DisplayName', ['Airflow Factor = ' num2str(Airflow)]);
+end
+xlabel('Time (s)');
+ylabel('CPU Temperature (°C)');
+title('Effect of Airflow on CPU Temperature');
+legend('Location','best');
+grid on;
+
+%% Plotting fan speed / temperature data
+% Experimental setup:
+% - BIOS fan settings adjusted under controlled system conditions
+% - 2-minute CPU stress phase + 1-minute cooldown phase
+% - HWiNFO sensor data imported and visualized in MATLAB
+
+% Read the obtained results and save it in data variables
+opts = detectImportOptions('fan20.CSV');
+opts.DataLines = [2 90];
+data20 = readtable('fan20.CSV', opts);
+
+opts = detectImportOptions('fan40.CSV');
+opts.DataLines = [2 90];
+data40 = readtable('fan40.CSV', opts);
+
+opts = detectImportOptions('fan60.csv');
+opts.DataLines = [2 90];
+data60 = readtable('fan60.csv', opts);
+
+opts = detectImportOptions('fan80.csv');
+opts.DataLines = [2 90];
+data80 = readtable('fan80.csv', opts);
+
+opts = detectImportOptions('fan100.csv');
+opts.DataLines = [2 90];
+data100 = readtable('fan100.csv', opts);
+
+%% Plot Stress behavior
+figure;
+hold on;
+
+% Set 0s as stress start for graph with best fit 
+idx20 = time20 <= 15;
+idx40 = time40 <= 15;
+idx60 = time60 <= 15;
+idx80 = time80 <= 15;
+idx100 = time100 <= 15;
+
+plot(time20(idx20), temp20(idx20), 'LineWidth', 2, 'DisplayName', 'Fan 20%');
+plot(time40(idx40), temp40(idx40), 'LineWidth', 2, 'DisplayName', 'Fan 40%');
+plot(time60(idx60), temp60(idx60), 'LineWidth', 2, 'DisplayName', 'Fan 60%');
+plot(time80(idx80), temp80(idx80), 'LineWidth', 2, 'DisplayName', 'Fan 80%');
+plot(time100(idx100), temp100(idx100), 'LineWidth', 2, 'DisplayName', 'Fan 100%');
+
+xlabel('Time (s)');
+ylabel('CPU Temperature (°C)');
+title('Stress Behavior under Different Fan Settings');
+legend('Location','best');
+grid on;
+hold off;
+
+%% Plot Cooldown behavior
+figure;
+hold on;
+idx20 = time20 >= 117;
+idx40 = time40 >= 116;
+idx60 = time60 >= 126;
+idx80 = time80 >= 118;
+idx100 = time100 >= 118;
+
+% Set 0s as cooldown start for graph with best fit 
+cool20_time = time20(idx20) - time20(find(idx20,1));
+cool40_time = time40(idx40) - time40(find(idx40,1));
+cool60_time = time60(idx60) - time60(find(idx60,1));
+cool80_time = time80(idx80) - time80(find(idx80,1));
+cool100_time = time100(idx100) - time100(find(idx100,1));
+
+plot(cool20_time, temp20(idx20), 'LineWidth', 2, 'DisplayName', 'Fan 20%');
+plot(cool40_time, temp40(idx40), 'LineWidth', 2, 'DisplayName', 'Fan 40%');
+plot(cool60_time, temp60(idx60), 'LineWidth', 2, 'DisplayName', 'Fan 60%');
+plot(cool80_time, temp80(idx80), 'LineWidth', 2, 'DisplayName', 'Fan 80%');
+plot(cool100_time, temp100(idx100), 'LineWidth', 2, 'DisplayName', 'Fan 100%');
+
+xlim([0 62]);
+xlabel('Time (s)');
+ylabel('CPU Temperature (°C)');
+title('Cooldown Behavior under Different Fan Settings');
+legend('Location','best');
+grid on;
+hold off;
